@@ -189,6 +189,12 @@ body {
 }
 .fbar select:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
 .fbar .fs { flex: 1; }
+.fbar-btn {
+    padding: 5px 14px; border-radius: 6px; border: 1px solid #334155;
+    background: #1d4ed8; color: #fff; font-size: .78rem; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+}
+.fbar-btn:hover { background: #2563eb; }
 .rbadge { font-size: .74rem; color: #64748b; background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 4px 10px; }
 
 /* ── Pagination ────────────────────────────────────────── */
@@ -258,6 +264,11 @@ details.acc[open] .acc-icon { transform: rotate(90deg); }
     to   { opacity: 1; transform: translateY(0); }
 }
 </style>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="/dashboard-filter.js"></script>
 {% endblock %}
 
 {% block body %}
@@ -499,14 +510,14 @@ details.acc[open] .acc-icon { transform: rotate(90deg); }
         <form method="GET" id="ff">
             <div class="fbar">
                 <label for="s-st">Status</label>
-                <select id="s-st" name="status" onchange="document.getElementById('ff').submit()">
+                <select id="s-st" name="status">
                     <option value=""         {{ status == '' ? 'selected' : '' }}>All statuses</option>
                     <option value="active"   {{ status == 'active'   ? 'selected' : '' }}>Active</option>
                     <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     <option value="degraded" {{ status == 'degraded' ? 'selected' : '' }}>Degraded</option>
                 </select>
                 <label for="s-lm">Per page</label>
-                <select id="s-lm" name="limit" onchange="document.getElementById('ff').submit()">
+                <select id="s-lm" name="limit">
                     {% for l in [25, 50, 100, 200] %}
                         <option value="{{ l }}" {{ limit == l ? 'selected' : '' }}>{{ l }}</option>
                     {% endfor %}
