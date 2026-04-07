@@ -26,12 +26,27 @@ cp .env .env.local
 
 Edit `.env.local` and set your database credentials:
 
-```dotenv
-# MySQL 8.0 — no password
-DATABASE_URL="mysql://root:@127.0.0.1:3306/dash-analytics?serverVersion=8.0.32&charset=utf8"
+> **Before running `doctrine:database:create`, check your exact MySQL version.**
+> Open **phpMyAdmin** and run the following query:
+>
+> ```sql
+> SELECT VERSION();
+> ```
+>
+> Use the returned version string in your `DATABASE_URL`. For example, if the result is `8.4.7`:
+>
+> ```dotenv
+> DATABASE_URL="mysql://root:@127.0.0.1:3306/dash-analytics?serverVersion=8.4.7&charset=utf8"
+> ```
+>
+> Doctrine uses `serverVersion` to generate correct SQL — a mismatch can cause migration or schema errors.
 
-# MySQL 8.0 — with password
-DATABASE_URL="mysql://root:YOUR_PASSWORD@127.0.0.1:3306/dash-analytics?serverVersion=8.0.32&charset=utf8"
+```dotenv
+# MySQL 8.4.7 — no password (replace version as needed from SELECT VERSION())
+DATABASE_URL="mysql://root:@127.0.0.1:3306/dash-analytics?serverVersion=8.4.7&charset=utf8"
+
+# MySQL 8.4.7 — with password
+DATABASE_URL="mysql://root:YOUR_PASSWORD@127.0.0.1:3306/dash-analytics?serverVersion=8.4.7&charset=utf8"
 
 # MariaDB 10.6
 # DATABASE_URL="mysql://root:YOUR_PASSWORD@127.0.0.1:3306/dash-analytics?serverVersion=10.11.2-MariaDB&charset=utf8"
