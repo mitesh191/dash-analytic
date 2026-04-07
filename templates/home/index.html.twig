@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block body %}
+<div style="max-width:700px;margin:40px auto;font-family:Arial,sans-serif;">
+<h1>{{ title }}</h1>
+<p>My first Symfony demo page with dynamic data.</p>
+
+<h2>Products</h2>
+<ul>
+{% for product in products %}
+<li>{{ product.name }} - Rs. {{ product.price }}</li>
+{% endfor %}
+</ul>
+</div>
+{% endblock %}

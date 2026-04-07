@@ -1,0 +1,607 @@
+﻿{% extends 'base.html.twig' %}
+
+{% block title %}Analytics Dashboard — Operations View{% endblock %}
+
+{% block stylesheets %}
+<style>
+/* ── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+}
+
+/* ── Shell / layout ────────────────────────────────────── */
+.shell { display: flex; flex-direction: column; min-height: 100vh; }
+.main  { flex: 1; padding: 24px; max-width: 1600px; width: 100%; margin: 0 auto; }
+
+/* ── Topbar ────────────────────────────────────────────── */
+.topbar {
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    padding: 0 24px;
+    height: 56px;
+    display: flex; align-items: center; gap: 10px;
+    position: sticky; top: 0; z-index: 100;
+}
+.topbar .brand { font-size: 1rem; font-weight: 700; color: #f1f5f9; letter-spacing: .02em; }
+.topbar .brand span { color: #38bdf8; }
+.topbar .pill {
+    font-size: .68rem; font-weight: 600; padding: 2px 9px;
+    border-radius: 20px; background: #0f172a; color: #94a3b8;
+    border: 1px solid #334155; white-space: nowrap;
+}
+.topbar .spacer { flex: 1; }
+.topbar .rc { font-size: .8rem; color: #64748b; white-space: nowrap; }
+.topbar .rc strong { color: #38bdf8; font-variant-numeric: tabular-nums; }
+
+/* ── Section heading ───────────────────────────────────── */
+.sh {
+    display: flex; align-items: center; gap: 10px;
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .1em; color: #475569;
+    margin-top: 32px; margin-bottom: 10px;
+}
+.sh:first-child { margin-top: 0; }
+.sh::after { content: ''; flex: 1; height: 1px; background: #1e293b; }
+.sh .chip {
+    font-size: .65rem; font-weight: 700; padding: 1px 7px;
+    border-radius: 10px; text-transform: uppercase; letter-spacing: .04em;
+}
+.chip-pass { background: #14532d; color: #4ade80; }
+.chip-warn { background: #451a03; color: #fbbf24; }
+.chip-fail { background: #450a0a; color: #f87171; }
+.chip-info { background: #0c2a47; color: #38bdf8; }
+
+/* ── Generic panel / table card ───────────────────────── */
+.panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.panel + .panel { margin-top: 12px; }
+.panel-hd {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+    font-size: .7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: #64748b;
+}
+.panel-hd .ph-right { margin-left: auto; font-weight: 400; color: #475569; font-size: .68rem; text-transform: none; letter-spacing: 0; }
+
+/* ── Shared table styles ───────────────────────────────── */
+.tbl { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.tbl thead th {
+    background: #0f172a;
+    color: #4b5e72;
+    padding: 8px 14px;
+    text-align: left; white-space: nowrap;
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em;
+    border-bottom: 1px solid #334155;
+}
+.tbl thead th.r { text-align: right; }
+.tbl tbody tr { border-bottom: 1px solid #1a2233; }
+.tbl tbody tr:last-child { border-bottom: none; }
+.tbl tbody tr:hover { background: #243554; }
+.tbl td { padding: 8px 14px; color: #cbd5e1; white-space: nowrap; }
+.tbl td.r  { text-align: right; font-variant-numeric: tabular-nums; }
+.tbl td.dim { color: #64748b; font-size: .75rem; }
+.tbl td.url { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.tbl td.url a { color: #38bdf8; text-decoration: none; font-size: .77rem; }
+.tbl td.url a:hover { text-decoration: underline; }
+
+/* sort-link in sort-able header */
+.tbl thead th a { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
+.tbl thead th a:hover { color: #94a3b8; }
+.tbl thead th.ac { color: #38bdf8; }
+
+/* ── Status / badge helpers ────────────────────────────── */
+.badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    white-space: nowrap;
+}
+.b-pass    { background: #14532d; color: #4ade80; }
+.b-warn    { background: #451a03; color: #fbbf24; }
+.b-fail    { background: #450a0a; color: #f87171; }
+.b-info    { background: #0c2a47; color: #38bdf8; }
+.b-active  { background: #14532d; color: #4ade80; }
+.b-inactive{ background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+.b-degraded{ background: #451a03; color: #fbbf24; }
+
+.c-pass { color: #4ade80; font-weight: 700; }
+.c-warn { color: #fbbf24; font-weight: 700; }
+.c-fail { color: #f87171; font-weight: 700; }
+.c-info { color: #38bdf8; font-weight: 700; }
+.c-ok   { color: #4ade80; }
+.c-w    { color: #fbbf24; }
+.c-cr   { color: #f87171; }
+
+/* ── Seed-required notice ──────────────────────────────── */
+.seed-notice {
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 32px 24px; text-align: center;
+}
+.seed-notice h3 { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; }
+.seed-notice p  { font-size: .83rem; color: #64748b; margin-bottom: 18px; line-height: 1.6; }
+.seed-cmd {
+    display: inline-block;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: .85rem;
+    background: #0f172a; color: #4ade80;
+    border: 1px solid #334155; border-radius: 6px;
+    padding: 8px 18px;
+    letter-spacing: .03em;
+}
+
+/* ── Log terminal panel ────────────────────────────────── */
+.log-body {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    background: #0a0f1a;
+    max-height: 260px; overflow-y: auto;
+}
+.log-hd-row {
+    display: grid;
+    grid-template-columns: 78px 74px 1fr 260px;
+    padding: 5px 14px;
+    background: #0f172a;
+    font-size: .65rem; font-weight: 700; text-transform: uppercase;
+    color: #334155; border-bottom: 1px solid #1a2233;
+    letter-spacing: .06em;
+}
+.log-row {
+    display: grid;
+    grid-template-columns: 78px 74px 1fr 260px;
+    padding: 5px 14px;
+    border-bottom: 1px solid #0f172a;
+    font-size: .76rem; align-items: baseline;
+}
+.log-row:last-child { border-bottom: none; }
+.log-row:hover      { background: #111827; }
+.lc-t { color: #334155; }
+.lc-l { font-weight: 700; text-transform: uppercase; }
+.lc-INFO    { color: #38bdf8; }
+.lc-DEBUG   { color: #334155; }
+.lc-WARNING { color: #fbbf24; }
+.lc-ERROR   { color: #f87171; }
+.lc-CRITICAL{ color: #e879f9; }
+.lc-m { color: #cbd5e1; word-break: break-word; }
+.lc-x { color: #334155; font-size: .68rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-empty { padding: 20px 14px; color: #334155; font-size: .8rem; font-style: italic; }
+
+/* ── Filter bar ────────────────────────────────────────── */
+.fbar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 10px 14px;
+}
+.fbar label { font-size: .7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+.fbar select {
+    padding: 5px 10px; border: 1px solid #334155; border-radius: 6px;
+    font-size: .81rem; background: #0f172a; color: #e2e8f0; cursor: pointer;
+}
+.fbar select:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
+.fbar .fs { flex: 1; }
+.rbadge { font-size: .74rem; color: #64748b; background: #0f172a; border: 1px solid #1e293b; border-radius: 6px; padding: 4px 10px; }
+
+/* ── Pagination ────────────────────────────────────────── */
+.pager {
+    display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
+    padding: 10px 14px; border-top: 1px solid #334155;
+}
+.pager a, .pager span {
+    padding: 4px 9px; border-radius: 5px; border: 1px solid #334155;
+    font-size: .77rem; text-decoration: none; color: #94a3b8; background: #0f172a;
+}
+.pager a:hover   { background: #1e3a5f; border-color: #38bdf8; color: #e2e8f0; }
+.pager .pc       { background: #1d4ed8; color: #fff; border-color: #2563eb; font-weight: 700; }
+.pager .dots     { border: none; background: none; color: #334155; }
+.pager .pi       { margin-left: auto; font-size: .72rem; color: #475569; background: none; border: none; }
+
+/* ── Scrollbars ────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: #0f172a; }
+::-webkit-scrollbar-thumb  { background: #334155; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Accordion (details/summary) ───────────────────────── */
+details.acc { margin-top: 16px; }
+details.acc + details.acc { margin-top: 10px; }
+details.acc > summary {
+    display: flex; align-items: center; gap: 10px;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    padding: 11px 16px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .09em; color: #94a3b8;
+    transition: background .15s, border-color .15s;
+}
+details.acc > summary::-webkit-details-marker { display: none; }
+details.acc > summary::marker { display: none; }
+details.acc > summary:hover { background: #243554; border-color: #475569; }
+details.acc[open] > summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: #0f172a;
+    color: #f1f5f9;
+}
+.acc-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    font-style: normal; font-size: .8rem;
+    transition: transform .2s;
+}
+details.acc[open] .acc-icon { transform: rotate(90deg); }
+.acc-title { flex: 1; }
+.acc-body {
+    border: 1px solid #334155;
+    border-top: none;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    overflow: hidden;
+    background: #1e293b;
+    animation: accOpen .15s ease;
+}
+@keyframes accOpen {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+
+{% set totalFail = monitorResults|filter(c => c.status == 'fail')|length %}
+{% set totalWarn = monitorResults|filter(c => c.status == 'warn')|length %}
+{% set degradedOnPage = entries|filter(e => e.status == 'degraded')|length %}
+{% set slowOnPage     = entries|filter(e => e.avgLoadTimeMs >= 3000)|length %}
+
+<div class="shell">
+
+    {# ─── Topbar ───────────────────────────────────────────────────────── #}
+    <header class="topbar">
+        <div class="brand">Dashboard<span>Analytics</span></div>
+        <span class="pill">DDD &middot; CQRS &middot; Event-Driven</span>
+        <span class="pill">Async Projection</span>
+        {% if meta.cache_hit %}
+            <span class="pill" style="background:#14532d;color:#4ade80;border-color:#166534">&#x26A1; Cache HIT</span>
+        {% else %}
+            <span class="pill" style="background:#0c2a47;color:#38bdf8;border-color:#1e40af">&#x1F5C4; DB Query</span>
+        {% endif %}
+        {% if totalFail > 0 %}
+            <span class="pill" style="background:#450a0a;color:#f87171;border-color:#7f1d1d">&#x26A0; {{ totalFail }} Alert{{ totalFail > 1 ? 's' : '' }}</span>
+        {% elseif totalWarn > 0 %}
+            <span class="pill" style="background:#451a03;color:#fbbf24;border-color:#78350f">&#x25B3; {{ totalWarn }} Warning{{ totalWarn > 1 ? 's' : '' }}</span>
+        {% else %}
+            <span class="pill" style="background:#14532d;color:#4ade80;border-color:#166534">&#x2713; All Checks Passed</span>
+        {% endif %}
+        <div class="spacer"></div>
+        <div class="rc"><strong>{{ total|number_format }}</strong> total sites &nbsp;&middot;&nbsp; page {{ page }}/{{ pages }}</div>
+    </header>
+
+    <main class="main">
+
+        {% if total == 0 %}
+        {# ── No-data banner ─────────────────────────────────────────────── #}
+        <div class="seed-notice">
+            <h3>&#x1F4E6; No data found in <code style="background:#0f172a;padding:2px 7px;border-radius:4px;font-size:.85rem;color:#38bdf8">dashboard_read_entries</code></h3>
+            <p>
+                The read model is empty. Populate it with 100&thinsp;000+ synthetic rows using the seed command below.<br>
+                Once done, reload this page — all four sections will display live data.
+            </p>
+            <span class="seed-cmd">php bin/console app:dashboard:seed</span>
+        </div>
+        {% endif %}
+
+        {# ══════════════════════════════════════════════════════════════════
+           1. PERFORMANCE MEASUREMENT
+           Wall-clock timing via hrtime() nanosecond in DoctrineDashboardReadModelRepository.
+           _meta travels through CachedDashboardReadModelRepository (cache_hit flag + source).
+           Exposed by DashboardController → template var $meta.
+        ══════════════════════════════════════════════════════════════════ #}
+        <details class="acc">
+        <summary>
+            <i class="acc-icon">&#x276F;</i>
+            <span class="acc-title">&#x1F4C8;&ensp;Performance Measurement</span>
+            <span class="chip {{ meta.is_slow ? 'chip-fail' : 'chip-pass' }}">
+                {{ meta.is_slow ? 'SLOW QUERY' : 'Healthy' }}
+            </span>
+        </summary>
+        <div class="acc-body">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th class="r">Measured Value</th>
+                        <th>Threshold / Note</th>
+                        <th>Implementation</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Query Time</strong></td>
+                        <td class="r {{ meta.is_slow ? 'c-fail' : 'c-pass' }}">{{ meta.query_time_ms }} ms</td>
+                        <td class="dim">500 ms</td>
+                        <td class="dim">hrtime() &middot; nanosecond resolution &middot; DBAL layer</td>
+                        <td>
+                            <span class="badge {{ meta.is_slow ? 'b-fail' : 'b-pass' }}">
+                                {{ meta.is_slow ? 'SLOW' : 'OK' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data Source</strong></td>
+                        <td class="r {{ meta.cache_hit ? 'c-pass' : 'c-info' }}">
+                            {{ meta.cache_hit ? 'Cache HIT' : 'Database' }}
+                        </td>
+                        <td class="dim">PSR-6 decorator &middot; TTL 60 s</td>
+                        <td class="dim">CachedDashboardReadModelRepository wraps DBAL repo</td>
+                        <td>
+                            <span class="badge {{ meta.cache_hit ? 'b-pass' : 'b-info' }}">
+                                {{ meta.cache_hit ? 'CACHED' : 'LIVE' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Records</strong></td>
+                        <td class="r c-info">{{ total|number_format }}</td>
+                        <td class="dim">Target: 100 000+</td>
+                        <td class="dim">dashboard_read_entries &middot; 4 covering indexes</td>
+                        <td>
+                            <span class="badge {{ total >= 100000 ? 'b-pass' : (total > 0 ? 'b-warn' : 'b-fail') }}">
+                                {{ total >= 100000 ? 'TARGET MET' : (total > 0 ? 'LOW' : 'EMPTY') }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Degraded Sites (page)</strong></td>
+                        <td class="r {{ degradedOnPage > 0 ? 'c-warn' : 'c-pass' }}">{{ degradedOnPage }}</td>
+                        <td class="dim">Threshold: 0</td>
+                        <td class="dim">Filtered from entries on this page</td>
+                        <td>
+                            <span class="badge {{ degradedOnPage > 0 ? 'b-warn' : 'b-pass' }}">
+                                {{ degradedOnPage > 0 ? 'DEGRADED' : 'CLEAN' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Slow Sites (page)</strong></td>
+                        <td class="r {{ slowOnPage > 0 ? 'c-warn' : 'c-pass' }}">{{ slowOnPage }}</td>
+                        <td class="dim">Avg load &ge; 3 000 ms</td>
+                        <td class="dim">Computed from avgLoadTimeMs on each DashboardEntryView</td>
+                        <td>
+                            <span class="badge {{ slowOnPage > 0 ? 'b-warn' : 'b-pass' }}">
+                                {{ slowOnPage > 0 ? 'ALERT' : 'OK' }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div></details>
+
+        {# ══════════════════════════════════════════════════════════════════
+           2. MONITORING HOOKS
+           MonitoringChecks::run() executes 5 named threshold checks per request.
+           In production these results feed a PagerDuty / Grafana push pipeline.
+        ══════════════════════════════════════════════════════════════════ #}
+        <details class="acc">
+        <summary>
+            <i class="acc-icon">&#x276F;</i>
+            <span class="acc-title">&#x1F6A8;&ensp;Monitoring Hooks</span>
+            {% if totalFail > 0 %}
+                <span class="chip chip-fail">{{ totalFail }} FAIL</span>
+            {% elseif totalWarn > 0 %}
+                <span class="chip chip-warn">{{ totalWarn }} WARN</span>
+            {% else %}
+                <span class="chip chip-pass">ALL PASS</span>
+            {% endif %}
+        </summary>
+        <div class="acc-body">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th style="width:28px"></th>
+                        <th>Check</th>
+                        <th class="r">Measured Value</th>
+                        <th class="r">Threshold</th>
+                        <th>Detail</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set hookIcons = {
+                        'Query Response Time':        '&#x23F1;',
+                        'Degraded Sites (this page)': '&#x1F534;',
+                        'High Bounce Rate Sites':     '&#x21A9;',
+                        'Slow Avg Load Time Sites':   '&#x1F422;',
+                        'Cache Layer':                '&#x26A1;'
+                    } %}
+                    {% for check in monitorResults %}
+                    <tr>
+                        <td style="text-align:center;font-size:1rem;padding-right:0">
+                            {{ (hookIcons[check.name] is defined ? hookIcons[check.name] : '&#x25CF;')|raw }}
+                        </td>
+                        <td><strong>{{ check.name }}</strong></td>
+                        <td class="r c-{{ check.status }}">{{ check.value }}</td>
+                        <td class="r dim">{{ check.threshold }}</td>
+                        <td class="dim">{{ check.detail }}</td>
+                        <td>
+                            <span class="badge b-{{ check.status }}">{{ check.status|upper }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div></details>
+
+        {# ══════════════════════════════════════════════════════════════════
+           3. LOGGING STRATEGY
+           Dedicated "dashboard" Monolog channel. DashboardRequestLogHandler
+           buffers the last 20 records in-memory per request. Identical records
+           are also written to var/log/dev.log for persistent audit storage.
+             INFO    — request lifecycle  |  WARNING — slow query  |  DEBUG — bus dispatch
+        ══════════════════════════════════════════════════════════════════ #}
+        <details class="acc">
+        <summary>
+            <i class="acc-icon">&#x276F;</i>
+            <span class="acc-title">&#x1F4CB;&ensp;Logging Strategy</span>
+            <span style="font-weight:400;color:#475569;text-transform:none;letter-spacing:0;font-size:.7rem">
+                {{ logRecords|length }}/20 entries
+                {% if meta.is_slow %}&nbsp;&middot;&nbsp; <span style="color:#fbbf24">slow query WARNING</span>{% endif %}
+            </span>
+        </summary>
+        <div class="acc-body">
+            <div class="panel-hd">
+                <span style="color:#38bdf8">&#x25CF;</span>
+                Request Log &mdash; DashboardRequestLogHandler (in-memory) + stream → dev.log
+                <span class="ph-right">{{ logRecords|length }} entries</span>
+            </div>
+            <div class="log-hd-row">
+                <span>Time</span><span>Level</span><span>Message</span><span>Context</span>
+            </div>
+            <div class="log-body">
+                {% if logRecords is empty %}
+                    <div class="log-empty">No entries captured — the handler buffers records as they are emitted during this request.</div>
+                {% else %}
+                    {% for entry in logRecords %}
+                    <div class="log-row">
+                        <span class="lc-t">{{ entry.time }}</span>
+                        <span class="lc-l lc-{{ entry.level }}">{{ entry.level }}</span>
+                        <span class="lc-m">{{ entry.message }}</span>
+                        <span class="lc-x">
+                            {% for k, v in entry.context %}{{ k }}={{ v is iterable ? (v|json_encode) : v }} {% endfor %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div></details>
+
+        {# ══════════════════════════════════════════════════════════════════
+           4. READ MODEL DATA TABLE
+           Raw DBAL query — no ORM hydration. 4 covering indexes on:
+           status, total_page_views, unique_visitors, last_recorded_at.
+        ══════════════════════════════════════════════════════════════════ #}
+        <div class="sh" style="margin-top:28px">&#x1F5C3; Read Model &mdash; dashboard_read_entries</div>
+
+        <form method="GET" id="ff">
+            <div class="fbar">
+                <label for="s-st">Status</label>
+                <select id="s-st" name="status" onchange="document.getElementById('ff').submit()">
+                    <option value=""         {{ status == '' ? 'selected' : '' }}>All statuses</option>
+                    <option value="active"   {{ status == 'active'   ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ status == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    <option value="degraded" {{ status == 'degraded' ? 'selected' : '' }}>Degraded</option>
+                </select>
+                <label for="s-lm">Per page</label>
+                <select id="s-lm" name="limit" onchange="document.getElementById('ff').submit()">
+                    {% for l in [25, 50, 100, 200] %}
+                        <option value="{{ l }}" {{ limit == l ? 'selected' : '' }}>{{ l }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="sort" value="{{ sortBy }}">
+                <input type="hidden" name="dir"  value="{{ sortDir }}">
+                <div class="fs"></div>
+                <div class="rbadge">{{ total|number_format }} records &middot; {{ pages }} pages</div>
+            </div>
+        </form>
+
+        <div class="panel" style="margin-top:10px">
+            <div style="overflow-x:auto">
+                <table class="tbl">
+                    <thead>
+                        <tr>
+                            {% set cols = {
+                                'site_name':        'Site Name',
+                                'total_page_views': 'Page Views',
+                                'unique_visitors':  'Unique Visitors',
+                                'bounce_rate':      'Bounce %',
+                                'avg_load_time_ms': 'Avg Load ms',
+                                'last_recorded_at': 'Last Recorded'
+                            } %}
+                            {% for col, label in cols %}
+                                {% set isActive = sortBy == col %}
+                                {% set nextDir  = (isActive and sortDir == 'DESC') ? 'ASC' : 'DESC' %}
+                                <th class="{{ col in ['total_page_views','unique_visitors','bounce_rate','avg_load_time_ms'] ? 'r ' : '' }}{{ isActive ? 'ac' : '' }}">
+                                    <a href="?page=1&limit={{ limit }}&status={{ status }}&sort={{ col }}&dir={{ nextDir }}">
+                                        {{ label }}{% if isActive %} {{ sortDir == 'DESC' ? '&#x25BC;' : '&#x25B2;' }}{% endif %}
+                                    </a>
+                                </th>
+                            {% endfor %}
+                            <th>Status</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.siteName }}</td>
+                            <td class="r">{{ entry.totalPageViews|number_format }}</td>
+                            <td class="r">{{ entry.uniqueVisitors|number_format }}</td>
+                            <td class="r">{{ entry.bounceRate|number_format(2) }}%</td>
+                            <td class="r {{ entry.avgLoadTimeMs >= 3000 ? 'c-cr' : (entry.avgLoadTimeMs >= 1000 ? 'c-w' : 'c-ok') }}">
+                                {{ entry.avgLoadTimeMs|number_format }}
+                            </td>
+                            <td class="dim">{{ entry.lastRecordedAt|slice(0,16)|replace({'T':' '}) }}</td>
+                            <td><span class="badge b-{{ entry.status }}">{{ entry.status }}</span></td>
+                            <td class="url">
+                                <a href="{{ entry.siteUrl }}" target="_blank" rel="noopener noreferrer" title="{{ entry.siteUrl }}">
+                                    {{ entry.siteUrl }}
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:40px;color:#334155">
+                                No records match the current filter.
+                                {% if status != '' %}
+                                    <a href="?page=1&limit={{ limit }}&sort={{ sortBy }}&dir={{ sortDir }}" style="color:#38bdf8;margin-left:8px">Clear filter</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if pages > 1 %}
+            <div class="pager">
+                {% if page > 1 %}
+                    <a href="?page=1&limit={{ limit }}&status={{ status }}&sort={{ sortBy }}&dir={{ sortDir }}">&laquo;</a>
+                    <a href="?page={{ page - 1 }}&limit={{ limit }}&status={{ status }}&sort={{ sortBy }}&dir={{ sortDir }}">&#x2039; Prev</a>
+                {% endif %}
+                {% set ws = page - 3 > 1 ? page - 3 : 1 %}
+                {% set we = page + 3 < pages ? page + 3 : pages %}
+                {% if ws > 1 %}<span class="dots">&hellip;</span>{% endif %}
+                {% for p in range(ws, we) %}
+                    {% if p == page %}
+                        <span class="pc">{{ p }}</span>
+                    {% else %}
+                        <a href="?page={{ p }}&limit={{ limit }}&status={{ status }}&sort={{ sortBy }}&dir={{ sortDir }}">{{ p }}</a>
+                    {% endif %}
+                {% endfor %}
+                {% if we < pages %}<span class="dots">&hellip;</span>{% endif %}
+                {% if page < pages %}
+                    <a href="?page={{ page + 1 }}&limit={{ limit }}&status={{ status }}&sort={{ sortBy }}&dir={{ sortDir }}">Next &#x203A;</a>
+                    <a href="?page={{ pages }}&limit={{ limit }}&status={{ status }}&sort={{ sortBy }}&dir={{ sortDir }}">&raquo;</a>
+                {% endif %}
+                <span class="pi">Page {{ page }} of {{ pages }} &nbsp;&middot;&nbsp; {{ total|number_format }} records</span>
+            </div>
+            {% endif %}
+        </div>
+
+    </main>
+</div>
+{% endblock %}
+
