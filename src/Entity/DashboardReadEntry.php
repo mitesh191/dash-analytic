@@ -18,6 +18,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(columns: ['total_page_views'], name: 'idx_dre_total_page_views')]
 #[ORM\Index(columns: ['unique_visitors'], name: 'idx_dre_unique_visitors')]
 #[ORM\Index(columns: ['last_recorded_at'], name: 'idx_dre_last_recorded_at')]
+#[ORM\Index(columns: ['status', 'total_page_views'], name: 'idx_dre_status_page_views')]
 class DashboardReadEntry
 {
     #[ORM\Id]
@@ -108,6 +109,11 @@ class DashboardReadEntry
     public function getAvgLoadTimeMs(): int { return $this->avgLoadTimeMs; }
 
     public function getStatus(): string { return $this->status; }
+
+    public function getMetricStatus(): \App\Domain\Dashboard\ValueObject\MetricStatus
+    {
+        return \App\Domain\Dashboard\ValueObject\MetricStatus::from($this->status);
+    }
 
     public function getLastRecordedAt(): \DateTimeImmutable { return $this->lastRecordedAt; }
 

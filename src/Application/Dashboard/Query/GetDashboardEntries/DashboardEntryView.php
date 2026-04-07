@@ -24,9 +24,12 @@ final class DashboardEntryView
 
     public static function fromArray(array $row): self
     {
+        $rawUrl = (string) $row['site_url'];
+        $safeUrl = preg_match('#^https?://#i', $rawUrl) ? $rawUrl : '';
+
         return new self(
             id:             $row['id'],
-            siteUrl:        $row['site_url'],
+            siteUrl:        $safeUrl,
             siteName:       $row['site_name'],
             totalPageViews: (int) $row['total_page_views'],
             uniqueVisitors: (int) $row['unique_visitors'],

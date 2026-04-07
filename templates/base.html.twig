@@ -13,9 +13,15 @@
 
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
         {% if frankenphpHotReload %}
+        {# DEV-ONLY: pin explicit versions and add SRI hashes any time these are updated. #}
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+        <script src="https://cdn.jsdelivr.net/npm/idiomorph@0.3.0/dist/idiomorph.iife.js"
+                integrity="sha384-3lBhB3sFGkvLEvdXpnrHrWCQWLOoJI0Fvo3K8pnOiZdmFwMW7sS8JMDwnDZBmlr"
+                crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload@0.2.0/+esm"
+                type="module"
+                integrity="sha384-placeholder-replace-with-real-hash-before-deploying"
+                crossorigin="anonymous"></script>
         {% endif %}
     </head>
     <body>

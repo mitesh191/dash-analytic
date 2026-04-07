@@ -6,6 +6,7 @@ namespace App\Application\Dashboard\Command\RecordSiteMetric;
 
 use App\Domain\Dashboard\Event\SiteMetricRecorded;
 use App\Domain\Dashboard\Repository\SiteMetricRepositoryInterface;
+use App\Domain\Dashboard\ValueObject\SiteUrl;
 use App\Entity\SiteMetric;
 use App\Shared\UuidGenerator;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -21,12 +22,15 @@ final class RecordSiteMetricHandler
 
     public function __invoke(RecordSiteMetricCommand $command): void
     {
+        // Validate URL at the application boundary — SiteUrl VO throws on invalid input
+        $siteUrl = new SiteUrl($command->siteUrl);
+
         $id  = UuidGenerator::generate();
         $now = new \DateTimeImmutable();
 
         $metric = new SiteMetric(
             $id,
-            $command->siteUrl,
+            $siteUrl->value(),
             $command->siteName,
             $command->pageViews,
             $command->uniqueVisitors,

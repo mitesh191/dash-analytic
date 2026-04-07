@@ -9,6 +9,7 @@ use App\Infrastructure\Monitoring\DashboardRequestLogHandler;
 use App\Infrastructure\Monitoring\MonitoringChecks;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -19,6 +20,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class DashboardController extends AbstractController
 {
     public function __construct(
+        #[Target('query.bus')]
         private readonly MessageBusInterface        $queryBus,
         private readonly DashboardRequestLogHandler $logHandler,
         private readonly MonitoringChecks           $monitoringChecks,

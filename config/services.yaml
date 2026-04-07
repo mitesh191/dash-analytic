@@ -22,7 +22,7 @@ services:
     App\Infrastructure\Dashboard\ReadModel\CachedDashboardReadModelRepository:
         arguments:
             $inner: '@App\Infrastructure\Dashboard\ReadModel\DoctrineDashboardReadModelRepository'
-            $cache: '@cache.app'
+            $cache: '@app.cache.dashboard'
 
     App\Infrastructure\Dashboard\ReadModel\DashboardReadModelRepositoryInterface:
         alias: App\Infrastructure\Dashboard\ReadModel\CachedDashboardReadModelRepository
@@ -49,6 +49,11 @@ services:
     App\Application\Dashboard\Command\RecordSiteMetric\RecordSiteMetricHandler:
         arguments:
             $eventBus: '@event.bus'
+
+    # Projector receives async events and clears the dedicated dashboard pool
+    App\Application\Dashboard\EventHandler\SiteMetricProjector:
+        arguments:
+            $cache: '@app.cache.dashboard'
 
     # Dashboard controller is read-only — only touches the query bus
     App\Controller\DashboardController:

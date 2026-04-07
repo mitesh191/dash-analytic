@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Application\Dashboard\EventHandler;
 
 use App\Domain\Dashboard\Event\SiteMetricRecorded;
+use App\Domain\Dashboard\ValueObject\MetricStatus;
 use App\Entity\DashboardReadEntry;
 use App\Shared\UuidGenerator;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
@@ -20,6 +22,7 @@ final class SiteMetricProjector
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly CacheItemPoolInterface $cache,
     ) {}
 
     public function __invoke(SiteMetricRecorded $event): void
@@ -38,7 +41,7 @@ final class SiteMetricProjector
                 uniqueVisitors: $event->uniqueVisitors,
                 bounceRate:     $event->bounceRate,
                 avgLoadTimeMs:  $event->loadTimeMs,
-                status:         'active',
+                status:         MetricStatus::Active->value,
                 lastRecordedAt: $event->recordedAt,
             );
             $this->em->persist($entry);
@@ -48,11 +51,16 @@ final class SiteMetricProjector
                 uniqueVisitors:      $event->uniqueVisitors,
                 newBounceRate:       $event->bounceRate,
                 newLoadTimeMs:       $event->loadTimeMs,
-                status:              'active',
+                status:              MetricStatus::Active->value,
                 recordedAt:          $event->recordedAt,
             );
         }
 
         $this->em->flush();
+
+        // Clear the dedicated dashboard cache pool so the updated read model
+        // is visible on the next request rather than serving stale data.
+        // clear() is safe here because the pool is exclusive to the dashboard.
+        $this->cache->clear();
     }
 }

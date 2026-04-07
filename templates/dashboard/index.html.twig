@@ -558,9 +558,13 @@ details.acc[open] .acc-icon { transform: rotate(90deg); }
                             <td class="dim">{{ entry.lastRecordedAt|slice(0,16)|replace({'T':' '}) }}</td>
                             <td><span class="badge b-{{ entry.status }}">{{ entry.status }}</span></td>
                             <td class="url">
-                                <a href="{{ entry.siteUrl }}" target="_blank" rel="noopener noreferrer" title="{{ entry.siteUrl }}">
-                                    {{ entry.siteUrl }}
-                                </a>
+                                {% if entry.siteUrl %}
+                                    <a href="{{ entry.siteUrl }}" target="_blank" rel="noopener noreferrer" title="{{ entry.siteUrl }}">
+                                        {{ entry.siteUrl }}
+                                    </a>
+                                {% else %}
+                                    <span class="dim">—</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% else %}

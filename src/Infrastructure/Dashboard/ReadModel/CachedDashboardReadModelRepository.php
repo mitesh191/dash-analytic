@@ -10,6 +10,9 @@ use Psr\Cache\CacheItemPoolInterface;
  * Decorator that wraps the DBAL read model with a PSR-6 cache layer.
  * TTL is intentionally short (60 s) so that async projector updates
  * get surfaced quickly without hammering the database on every request.
+ *
+ * Invalidation is handled by calling clear() on the dedicated pool from
+ * SiteMetricProjector — safe because the pool is exclusive to the dashboard.
  */
 final class CachedDashboardReadModelRepository implements DashboardReadModelRepositoryInterface
 {

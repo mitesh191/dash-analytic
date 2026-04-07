@@ -57,6 +57,12 @@ php bin/console doctrine:migrations:migrate
 php bin/console app:dashboard:seed
 ```
 
+> **Memory limit error?** If you hit a `PHP Fatal error: Allowed memory size exhausted` during seeding, raise the memory limit inline:
+>
+> ```bash
+> php -d memory_limit=512M bin/console app:dashboard:seed
+> ```
+
 ### 6. Start the server
 
 ```bash
